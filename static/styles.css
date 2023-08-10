@@ -1,0 +1,57 @@
+body {
+  margin: 1vh;
+}
+
+.screen {
+  height: 98vh;
+  display: flex;
+}
+
+.card-container {
+  display: flex;
+  width: 19vw;
+  min-width: 4cm;
+  max-width: 6cm;
+  flex-direction: column;
+}
+
+.card-list-header {
+  border: 3px solid black;
+  padding: 5px;
+  text-align: center;
+  /*max-height: 10%;*/
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow-y: scroll;
+  border: 2px solid black;
+}
+
+.card {
+  border: 1px solid black;
+  border-radius: 25px;
+  width: 90%;
+  margin: auto;
+  padding: 5px;
+}
+
+.card-drop-area {
+    margin: 0px;
+    padding-top: 5px;
+}
+
+.card-container:not(:last-child) {
+  margin-right: 10px;
+}
+
+.card-title {
+  margin-top: 5px;
+}
+
+.card-add-button {
+  height: 30px;
+}
+
