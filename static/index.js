@@ -20,6 +20,10 @@ function drop(ev) {
 
     var data = ev.dataTransfer.getData("text");
     card = document.getElementById(data);
+    if (card == null) {
+        console.log("dropped object is not a card");
+        return;
+    }
     container = card.closest(".card-drop-area");
 
     dropOnto(ev, ev.target, container);
@@ -100,6 +104,7 @@ function loseFocus(e) {
             e.target.innerText = "title..."
         }
     }
+    saveCurrentCards().then(x => console.log("Saving because lost focus"));
 }
 
 function onEnterKey(ev) {
@@ -119,6 +124,7 @@ function onEnterKey(ev) {
     console.log("Removing focus and selection");
     ev.target.blur();
     document.getSelection().removeAllRanges();
+    saveCurrentCards().then(x => console.log("Saving because hit enter"));
 }
 
 function makeCardTitleEditable(editable, ct) {
@@ -161,7 +167,7 @@ function makeEditable(editable, ct) {
 //   </div>
 // </div>
 
-function makeCardListItem(title_str, desc_str) {
+function makeCardListItem(title_str, desc_str, id_str) {
     drop_area = document.createElement("div");
     drop_area.classList.add("card-drop-area");
     card = document.createElement("div");
@@ -177,6 +183,8 @@ function makeCardListItem(title_str, desc_str) {
     card.appendChild(title);
     card.appendChild(desc);
 
+    card.id = id_str;
+
     cardEnable(card);
     cardTitleEditEnable(title);
     
@@ -188,10 +196,72 @@ function addCardButtonClick(ev) {
     card_list = ev.target.parentNode.querySelector(".card-list");
     item = makeCardListItem("New card", "This is a new card");
     card_list.appendChild(item);
+    saveCurrentCards().then(x => console.log("cards saved"));
 }
 
-function readCardsFromApi() {
-    //const response = await fetch("data");
+async function loadCards() {
+    console.log("loading cards");
+    try {
+        console.log("hi");
+        response = await fetch("api/data/current");
+        console.log("response", response);
+        if (response.status == 404) {
+            console.warn("404 on current", response);
+            response = null;
+        }
+    } catch (error) {
+        reponse = null;
+        console.warn("current data not found, using default", error);
+    }
+    if (response == null) {
+        console.log("requesting default data");
+        response = await fetch("api/data/default");
+    }
+    const data = await response.json();
+    console.log("data", data);
+    all_lists = document.querySelectorAll(".card-list");
+    console.log("all_lists", all_lists);
+    console.log("data.lists.length", data.lists.length);
+    for (var i = 0; i < data.lists.length; i++) {
+        console.log("i", i);
+        list_element = all_lists.item(i);
+        list = data.lists[i];
+        console.log(`list ${i}:`, list);
+        list.items.forEach(card => {
+            console.log(card);
+            card_element = makeCardListItem(card.title, card.desc, card.id);
+            list_element.appendChild(card_element);
+        });
+    }
+}
+
+async function saveCurrentCards() {
+    console.log("Saving cards");
+    data = {
+        lists: []
+    };
+    document.querySelectorAll(".card-list").forEach(cardList => {
+        console.log("cardList", cardList);
+        list = []
+        cardList.querySelectorAll(".card").forEach(card => {
+            console.log("saving card", card);
+            id = card.id;
+            title = card.querySelector(".card-title").innerText;
+            desc = card.querySelector(".card-description").innerText;
+            list.push({ id: id, title: title, desc: desc});
+        });
+        data.lists.push({ items: list });
+    });
+    console.log("saving data", data);
+    saveCards(JSON.stringify(data));
+}
+
+async function saveCards(json) {
+    const response = await fetch("api/data/current", {
+        method: "POST",
+        body: json,
+        headers: {"Content-Type": "application/json; charset=UTF-8"}
+    });
 }
 
 document.querySelectorAll(".card-add-button").forEach(b => {
@@ -235,3 +305,5 @@ document.querySelectorAll(".card-header-title").forEach(ct => {
     ct.addEventListener("blur", loseFocus);
     ct.addEventListener("keydown", onEnterKey);
 });
+
+loadCards()
