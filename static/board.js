@@ -3,7 +3,7 @@
 function getBoardId() {
     split = window.location.href.split("boards/");
     boardId = split[1];
-    console.log("current board", boardId);
+    console.log("current board '" + boardId + "'");
     return boardId;
 }
 
@@ -45,6 +45,7 @@ function dropOnto(e, target, node) {
         console.log("appending at end of list");
         target.appendChild(node);
         e.preventDefault();
+        saveCurrentCards().then(x => console.log("Saved due to card dragged"));
         return;
     }
     drop_area_node = target.closest(".card-drop-area");
@@ -67,6 +68,7 @@ function dropOnto(e, target, node) {
         card_list.insertBefore(node, drop_area_node.nextSibling);
     }
     e.preventDefault();
+    saveCurrentCards().then(x => console.log("Saved due to card dragged"));
 }
 
 function shouldInsertAbove(dropY, drop_area) {
@@ -209,22 +211,6 @@ function addCardButtonClick(ev) {
 async function loadCards() {
     console.log("loading cards");
     const response = await fetch("/api/data/" + getBoardId());
-    /*try {
-        console.log("hi");
-        response = await fetch("/api/data/" + getBoardId());
-        console.log("response", response);
-        if (response.status == 404) {
-            console.warn("404 on current", response);
-            response = null;
-        }
-    } catch (error) {
-        reponse = null;
-        console.warn("current data not found, using default", error);
-    }
-    if (response == null) {
-        console.log("requesting default data");
-        response = await fetch("/api/data/default");
-    }*/
     const data = await response.json();
     console.log("data", data);
     all_lists = document.querySelectorAll(".card-list");
@@ -265,7 +251,7 @@ async function saveCurrentCards() {
 }
 
 async function saveCards(json) {
-    const response = await fetch("/api/data/current", {
+    const response = await fetch("/api/data/" + getBoardId(), {
         method: "POST",
         body: json,
         headers: {"Content-Type": "application/json; charset=UTF-8"}
@@ -277,6 +263,18 @@ document.querySelectorAll(".card-add-button").forEach(b => {
 });
 
 /// END Card addition code ///
+
+/// Board switching ///
+
+function onBoardPick(ev) {
+    console.log("board picked ", ev);
+    el = ev.target;
+    value = el.options[el.selectedIndex].value;
+    console.log("switching to board '", value, "'");
+    window.location.href = "/boards/" + value;
+}
+
+/// End board switching ///
 
 console.log("hello");
 
@@ -313,5 +311,20 @@ document.querySelectorAll(".card-header-title").forEach(ct => {
     ct.addEventListener("blur", loseFocus);
     ct.addEventListener("keydown", onEnterKey);
 });
+
+document.querySelectorAll("#pick-board").forEach(b => {
+    b.addEventListener("change", onBoardPick);
+    boardId = getBoardId();
+    curOption = null;
+    for (var i = 0; i < b.options.length; i++) {
+        console.log(b.options[i]);
+        if (b.options[i].value == boardId) {
+            curOption = b.options[i];
+            b.selectedIndex = i;
+            return;
+        }
+    }
+    console.warn("Board option not found: " + boardId);
+})
 
 loadCards()
