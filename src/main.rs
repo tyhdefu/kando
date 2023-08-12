@@ -2,6 +2,7 @@ use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use actix_web::middleware::Logger;
 use env_logger::Env;
 use crate::api::api_service;
+use crate::static_pages::board;
 
 mod static_pages;
 mod api;
@@ -23,10 +24,10 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
-            .route("/", web::get().to(static_pages::index))
-            .route("/index.html", web::get().to(static_pages::index))
+            .service(web::redirect("/", "/boards/current"))
+            .service(board)
             .service(static_pages::index_js)
-            .service(static_pages::styles_css)
+            .service(static_pages::board_css)
             .service(echo)
             .service(api_test)
             .service(api_service())

@@ -17,8 +17,9 @@ pub fn api_service() -> Scope {
 async fn get_data(path: web::Path<String>) -> impl Responder {
     let resource = path.into_inner();
     match resource.as_str() {
-        "default" => Ok(NamedFile::open_async("data/basic.json").await),
-        "current" => Ok(NamedFile::open_async("data/current.json").await),
+        "default"   => Ok(NamedFile::open_async("data/default.json").await),
+        "basic"     => Ok(NamedFile::open_async("data/basic.json").await),
+        "current"   => Ok(NamedFile::open_async("data/current.json").await),
         _ => Err(io::Error::from(io::ErrorKind::NotFound)),
     }
 }
@@ -28,8 +29,9 @@ async fn post_data(path: web::Path<String>, payload: web::Json<KandoBoardState>)
 
     let resource = path.into_inner();
     let path: PathBuf = match resource.as_str() {
-        "default" => "data/basic.json".into(),
-        "current" => "data/current.json".into(),
+        "default"   => return Err(io::Error::from(io::ErrorKind::PermissionDenied)),
+        "basic"     => "data/basic.json".into(),
+        "current"   => "data/current.json".into(),
         _ => return Err(io::Error::from(io::ErrorKind::NotFound)),
     };
 

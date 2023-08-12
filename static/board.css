@@ -5,6 +5,24 @@ body {
 .screen {
   height: 98vh;
   display: flex;
+  flex-direction: column;
+}
+
+.top-bar {
+  display: flex;
+  border: 1px solid black;
+  flex-direction: column;
+}
+
+.top-bar h2 {
+  margin: 1px;
+  padding: 1px;
+}
+
+.board {
+  display: flex;
+  flex-grow: 1;
+  min-height: 0; /* Allows flexbox to be smaller than its container */
 }
 
 .card-container {

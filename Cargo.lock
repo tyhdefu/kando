@@ -3,18 +3,6 @@
 version = 3
 
 [[package]]
-name = "Kando"
-version = "0.1.0"
-dependencies = [
- "actix-files",
- "actix-web",
- "env_logger",
- "log",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "actix-codec"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -688,6 +676,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "936cfd212a0155903bcbc060e316fb6cc7cbf2e1907329391ebadc1fe0ce77c2"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "kando"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "env_logger",
+ "log",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

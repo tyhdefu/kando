@@ -1,5 +1,12 @@
 //// DROPPING BEHAVIOUR ////
 
+function getBoardId() {
+    split = window.location.href.split("boards/");
+    boardId = split[1];
+    console.log("current board", boardId);
+    return boardId;
+}
+
 // Allow dropping by preventing the default behaviour.
 function allowDrop(ev) {
     //console.log("allowing dropping: " + ev);
@@ -201,9 +208,10 @@ function addCardButtonClick(ev) {
 
 async function loadCards() {
     console.log("loading cards");
-    try {
+    const response = await fetch("/api/data/" + getBoardId());
+    /*try {
         console.log("hi");
-        response = await fetch("api/data/current");
+        response = await fetch("/api/data/" + getBoardId());
         console.log("response", response);
         if (response.status == 404) {
             console.warn("404 on current", response);
@@ -215,8 +223,8 @@ async function loadCards() {
     }
     if (response == null) {
         console.log("requesting default data");
-        response = await fetch("api/data/default");
-    }
+        response = await fetch("/api/data/default");
+    }*/
     const data = await response.json();
     console.log("data", data);
     all_lists = document.querySelectorAll(".card-list");
@@ -257,7 +265,7 @@ async function saveCurrentCards() {
 }
 
 async function saveCards(json) {
-    const response = await fetch("api/data/current", {
+    const response = await fetch("/api/data/current", {
         method: "POST",
         body: json,
         headers: {"Content-Type": "application/json; charset=UTF-8"}
