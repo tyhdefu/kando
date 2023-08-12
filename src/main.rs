@@ -28,6 +28,7 @@ async fn main() -> std::io::Result<()> {
             .service(board)
             .service(static_pages::index_js)
             .service(static_pages::board_css)
+            .service(static_pages::icon)
             .service(echo)
             .service(api_test)
             .service(api_service())

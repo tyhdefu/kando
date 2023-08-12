@@ -21,3 +21,8 @@ async fn index_js() -> impl Responder {
 async fn board_css() -> impl Responder {
     NamedFile::open_async("static/board.css").await
 }
+
+#[get("/favicon.svg")]
+async fn icon() -> impl Responder {
+    NamedFile::open_async("static/favicon.svg").await
+}
