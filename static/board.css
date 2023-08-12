@@ -72,3 +72,6 @@ body {
   height: 30px;
 }
 
+.board-picker {
+  margin-left: auto;
+}
