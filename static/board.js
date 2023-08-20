@@ -176,7 +176,7 @@ function makeEditable(editable, ct) {
 //   </div>
 // </div>
 
-function makeCardListItem(title_str, desc_str, id_str) {
+function makeCardListItem(title_str,/* desc_str,*/ db_id_str, tag_list) {
     drop_area = document.createElement("div");
     drop_area.classList.add("card-drop-area");
     card = document.createElement("div");
@@ -184,15 +184,25 @@ function makeCardListItem(title_str, desc_str, id_str) {
     title = document.createElement("h3");
     title.classList.add("card-title");
     title.innerText = title_str;
-    desc = document.createElement("p");
-    desc.classList.add("card-description");
-    desc.innerText = desc_str;
+    //desc = document.createElement("p");
+    //desc.classList.add("card-description");
+    //desc.innerText = desc_str;
+    tags = document.createElement("div");
+    tags.classList.add("card-tags");
+
+    tag_list.forEach(tag_str => {
+        tag = document.createElement("p");
+        tag.innerText = tag_str;
+        tag.classList.add("card-tag");
+        tags.appendChild(tag);
+    });
 
     drop_area.appendChild(card);
     card.appendChild(title);
-    card.appendChild(desc);
+    //card.appendChild(desc);
+    card.appendChild(tags);
 
-    card.id = id_str;
+    card.db_id = db_id_str;
 
     cardEnable(card);
     cardTitleEditEnable(title);
@@ -203,14 +213,14 @@ function makeCardListItem(title_str, desc_str, id_str) {
 function addCardButtonClick(ev) {
     console.log("adding new card");
     card_list = ev.target.parentNode.querySelector(".card-list");
-    item = makeCardListItem("New card", "This is a new card");
+    item = makeCardListItem("New card", null, /*"unknown id", */["Tag 1", "Tag 2"]);
     card_list.appendChild(item);
     saveCurrentCards().then(x => console.log("cards saved"));
 }
 
 async function loadCards() {
     console.log("loading cards");
-    const response = await fetch("/api/data/" + getBoardId());
+    const response = await fetch("/api/boards/" + getBoardId());
     const data = await response.json();
     console.log("data", data);
     all_lists = document.querySelectorAll(".card-list");
@@ -223,7 +233,10 @@ async function loadCards() {
         console.log(`list ${i}:`, list);
         list.items.forEach(card => {
             console.log(card);
-            card_element = makeCardListItem(card.title, card.desc, card.id);
+            if (card.tags == undefined) {
+                card.tags = [];
+            }
+            card_element = makeCardListItem(card.title/*, card.desc*/, card.id, card.tags);
             list_element.appendChild(card_element);
         });
     }
@@ -239,10 +252,16 @@ async function saveCurrentCards() {
         list = []
         cardList.querySelectorAll(".card").forEach(card => {
             console.log("saving card", card);
-            id = card.id;
+            id = card.db_id;
+            console.log("db id: ", id);
             title = card.querySelector(".card-title").innerText;
-            desc = card.querySelector(".card-description").innerText;
-            list.push({ id: id, title: title, desc: desc});
+            //desc = card.querySelector(".card-description").innerText;
+            desc = "";
+            tags = []
+            card.querySelectorAll(".card-tag").forEach(tag => {
+                tags.push(tag.innerText);
+            })
+            list.push({ id: id, title: title, desc: desc, tags: tags});
         });
         data.lists.push({ items: list });
     });
@@ -251,7 +270,7 @@ async function saveCurrentCards() {
 }
 
 async function saveCards(json) {
-    const response = await fetch("/api/data/" + getBoardId(), {
+    const response = await fetch("/api/boards/" + getBoardId(), {
         method: "POST",
         body: json,
         headers: {"Content-Type": "application/json; charset=UTF-8"}

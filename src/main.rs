@@ -1,5 +1,6 @@
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use actix_web::middleware::Logger;
+use actix_web::web::Data;
 use env_logger::Env;
 use crate::api::api_service;
 use crate::static_pages::board;
@@ -23,6 +24,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .app_data(Data::new(api::create_state_holder()))
             .wrap(Logger::default())
             .service(web::redirect("/", "/boards/current"))
             .service(board)

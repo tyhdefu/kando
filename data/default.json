@@ -3,23 +3,26 @@
     {
       "items": [
         {
-          "id": "foo",
+          "id": "fd747259-d99e-4d66-8cc2-f7aa7452446b",
           "title": "Hello",
-          "desc": "hi n stuff"
+          "desc": "hi n stuff",
+          "tags": []
         },
         {
-          "id": "bar",
+          "id": "51d5b5d5-4ac3-4943-9b15-e99f20956623",
           "title": "Hello",
-          "desc": "hi n stuff"
+          "desc": "hi n stuff",
+          "tags": []
         }
       ]
     },
     {
       "items": [
         {
-          "id": "xyz",
+          "id": "70aebbcf-0365-43c8-8c3d-f764cc799ccf",
           "title": "Mega Task",
-          "desc": "Do many things"
+          "desc": "Do many things",
+          "tags": []
         }
       ]
     }
