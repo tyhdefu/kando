@@ -1,6 +1,6 @@
 use actix_web::{delete, get, HttpResponse, patch, post, Responder, ResponseError, Scope, web};
 use serde::{Deserialize, Serialize};
-use crate::api::board::{BoardId, CardId, KandoBoardState};
+use crate::api::board::{BoardId, CardId, CardListId, KandoBoardState};
 use crate::api::data_store::{DataStore, DataStoreError};
 use crate::api::data_store::file::{JsonFileAccessor, MappedDataStore};
 
@@ -25,6 +25,7 @@ pub fn api_service() -> Scope {
     web::scope("/api")
         .service(get_board)
         .service(post_data)
+        .service(patch_board_state)
         .service(append_card)
         .service(modify_card)
         .service(delete_card)
@@ -63,16 +64,17 @@ async fn post_data(path: web::Path<BoardId>, store: web::Data<DataStorage>, payl
 enum PatchBoardState {
     /// Move this card with the given id into the specified card list
     /// in the specified location
+    #[serde(rename = "move_card")]
     MoveCard {
         id: CardId,
-        card_list: usize,
+        to_list: CardListId,
         list_index: Option<usize>,
     },
     // TODO: Create new lists.
     //       Rename lists.
 }
 
-#[post("/boards/{board}")]
+#[patch("/boards/{board}")]
 async fn patch_board_state(path: web::Path<BoardId>,
                            store: web::Data<DataStorage>,
                            payload: web::Json<PatchBoardState>) -> Result<impl Responder, DataStoreError> {
@@ -80,10 +82,10 @@ async fn patch_board_state(path: web::Path<BoardId>,
     Ok(match payload.into_inner() {
         PatchBoardState::MoveCard {
             id,
-            card_list,
+            to_list,
             list_index
         } => {
-            store.move_card(board_id, id, card_list, list_index).await?;
+            store.move_card(board_id, id, to_list, list_index).await?;
             HttpResponse::Ok().finish()
         }
     })
@@ -97,7 +99,7 @@ struct AppendCard {
     pub desc: String,
     #[serde(default)]
     pub tags: Vec<String>,
-    pub list: usize,
+    pub list: CardListId,
 }
 
 // POST   /boards/<board>/cards/ -> Add a new card.

@@ -67,6 +67,7 @@ body {
 .card-title {
   margin-top: 5px;
   margin-bottom: 5px;
+  overflow-wrap: break-word;
 }
 
 .card-add-button {

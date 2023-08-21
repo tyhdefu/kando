@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use async_trait::async_trait;
 use uuid::Uuid;
-use crate::api::board::{BoardId, Card, CardId, KandoBoardState};
+use crate::api::board::{BoardId, Card, CardId, CardListId, KandoBoardState};
 use crate::api::data_store::{DataStore, DataStoreError};
 
 pub struct MappedDataStore<T: BoardStoreAccessor + Send + Sync> {
@@ -34,12 +34,14 @@ impl<T: BoardStoreAccessor + Send + Sync> DataStore for MappedDataStore<T> {
         Ok(())
     }
 
-    async fn append_new_card(&self, board_id: BoardId, list_index: usize, title: String, desc: String, tags: Vec<String>) -> Result<Card, DataStoreError> {
+    async fn append_new_card(&self, board_id: BoardId, list_index: CardListId, title: String, desc: String, tags: Vec<String>) -> Result<Card, DataStoreError> {
         let accessor = self.map.get(&board_id).ok_or(DataStoreError::BoardNotFound)?;
         let mut state = accessor.read().await?;
         let id = CardId::new(Uuid::new_v4());
         let card = Card::new(id, title, desc, tags);
-        state.get_card_list_mut(list_index).push_card(card.clone());
+        state.get_card_list_mut(&list_index)
+            .ok_or(DataStoreError::CardListNotFound)?
+            .push_card(card.clone());
         accessor.write(state).await?;
         return Ok(card);
     }
@@ -71,10 +73,10 @@ impl<T: BoardStoreAccessor + Send + Sync> DataStore for MappedDataStore<T> {
         Ok(card)
     }
 
-    async fn move_card(&self, board_id: BoardId, card_id: CardId, list: usize, list_index: Option<usize>) -> Result<(), DataStoreError> {
+    async fn move_card(&self, board_id: BoardId, card_id: CardId, list: CardListId, list_index: Option<usize>) -> Result<(), DataStoreError> {
         let accessor = self.map.get(&board_id).ok_or(DataStoreError::BoardNotFound)?;
         let mut state = accessor.read().await?;
-        let result = state.move_card(&card_id, list, list_index);
+        let result = state.move_card(&card_id, &list, list_index);
         match result {
             None => Err(DataStoreError::InternalError(format!("No such card with id {:?}, no such list, or invalid list index", card_id))),
             Some(_) => {

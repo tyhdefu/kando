@@ -51,8 +51,8 @@ impl KandoBoardState {
         self.lists.push(list);
     }
 
-    pub fn get_card_list_mut(&mut self, index: usize) -> &mut CardList {
-        &mut self.lists[index]
+    pub fn get_card_list_mut(&mut self, id: &CardListId) -> Option<&mut CardList> {
+        self.lists.iter_mut().find(|l| l.id == *id)
     }
 
     pub fn get_card_mut(&mut self, card_id: &CardId) -> Option<&mut Card> {
@@ -70,7 +70,7 @@ impl KandoBoardState {
     }
 
     /// Attempts to move the card with the given uuid to another list and list position
-    pub fn move_card(&mut self, card_id: &CardId, card_list: usize, list_index: Option<usize>) -> Option<Card> {
+    pub fn move_card(&mut self, card_id: &CardId, card_list: &CardListId, list_index: Option<usize>) -> Option<Card> {
         let mut from = None;
 
         for i in 0..self.lists.len() {
@@ -78,28 +78,25 @@ impl KandoBoardState {
                 from = Some((i, index));
             }
         }
-        if from.is_none() {
-            return None;
-        }
-        let (from_list, from_index) = from.unwrap();
-        if card_list > self.lists.len() {
-            return None;
-        }
-        return match list_index {
+        let (from_list, from_index) = from?;
+
+        return Some(match list_index {
             None => {
                 let card = self.lists[from_list].items.remove(from_index);
-                self.lists[card_list].items.push(card.clone());
-                Some(card)
+                let l =  self.get_card_list_mut(card_list)?;
+                l.items.push(card.clone());
+                card
             }
             Some(idx) => {
-                if idx > self.lists[card_list].items.len() {
+                if idx > self.get_card_list_mut(card_list)?.items.len() {
                     return None;
                 }
                 let card = self.lists[from_list].items.remove(from_index);
-                self.lists[card_list].items.insert(idx, card.clone());
-                Some(card)
+                let l = self.get_card_list_mut(card_list)?;
+                l.items.insert(idx, card.clone());
+                card
             }
-        }
+        })
     }
 }
 

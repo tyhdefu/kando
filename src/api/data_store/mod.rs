@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 use std::io;
 use async_trait::async_trait;
 use serde_json::Error;
-use crate::api::board::{BoardId, Card, CardId, KandoBoardState};
+use crate::api::board::{BoardId, Card, CardId, CardListId, KandoBoardState};
 
 pub mod file;
 
@@ -18,7 +18,7 @@ pub trait DataStore {
     async fn set_board(&self, board_id: BoardId, state: KandoBoardState) -> Result<(), DataStoreError>;
 
     /// Append a new card into the given board and onto the give card list.
-    async fn append_new_card(&self, board_id: BoardId, list_index: usize, title: String, desc: String, tags: Vec<String>) -> Result<Card, DataStoreError>;
+    async fn append_new_card(&self, board_id: BoardId, list_index: CardListId, title: String, desc: String, tags: Vec<String>) -> Result<Card, DataStoreError>;
 
     async fn modify_card(&self, board_id: BoardId, card_id: CardId, new_title: Option<String>, new_desc: Option<String>) -> Result<Card, DataStoreError>;
 
@@ -27,7 +27,7 @@ pub trait DataStore {
     /// Move the card to the given list within the given board.
     /// If the list_index is supplied, this defines the position within the list to move the card to.
     /// Otherwise the card is appended to the list.
-    async fn move_card(&self, board_id: BoardId, card_id: CardId, list: usize, list_index: Option<usize>) -> Result<(), DataStoreError>;
+    async fn move_card(&self, board_id: BoardId, card_id: CardId, list: CardListId, list_index: Option<usize>) -> Result<(), DataStoreError>;
 }
 
 #[derive(Debug)]
@@ -35,8 +35,7 @@ pub enum DataStoreError {
     /// The board did not exist.
     BoardNotFound,
     CardNotFound,
-    /// When the card list did not exist.
-    NoSuchList,
+    CardListNotFound,
     /// An internal un-resolvable error occurred.
     InternalError(String),
     /// An error occurred when trying to serialize to json for the final response.
@@ -50,7 +49,7 @@ impl Display for DataStoreError {
         match self {
             DataStoreError::BoardNotFound => write!(f, "Board not found."),
             DataStoreError::CardNotFound => write!(f, "Card not found"),
-            DataStoreError::NoSuchList => write!(f, "No such list."),
+            DataStoreError::CardListNotFound => write!(f, "Card list not found"),
             DataStoreError::InternalError(e) => write!(f, "Internal Error: {}", e),
             DataStoreError::SerializeError(e) => write!(f, "JSON Serialization error: {}", e),
             DataStoreError::InvalidId(e) => write!(f, "Invalid ID: {}", e),

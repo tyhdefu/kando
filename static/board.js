@@ -41,11 +41,13 @@ function drop(ev) {
 // - before the dropped on card if top half
 // - after the dropped on card if bottom half
 function dropOnto(e, target, node) {
+    const card_i_id = node.querySelector(".card").getAttribute("i_id");
     if (target.classList.contains("card-list")) {
-        console.log("appending at end of list");
+        console.log("appending at end of list", node);
         target.appendChild(node);
         e.preventDefault();
-        saveCurrentCards().then(x => console.log("Saved due to card dragged"));
+        const card_list_i_id = target.getAttribute("i_id");
+        saveCardMove(card_i_id, card_list_i_id, undefined).then(x => console.log("Saved due to card dragged"));
         return;
     }
     const drop_area_node = target.closest(".card-drop-area");
@@ -59,16 +61,27 @@ function dropOnto(e, target, node) {
 
     const insertAbove = shouldInsertAbove(e.pageY, drop_area_node);
 
+    let target_index;
+
+    let target_node_index = undefined;
+    for (var i = 0; i < card_list.children; i++) {
+        if (card_list.children.item(i).isSameNode()) {
+            target_index = i;
+            break;
+        }
+    }
+
     if (insertAbove) {
         console.log("Inserting before");
         card_list.insertBefore(node, drop_area_node);
     }
     else {
         console.log("Inserting after");
+        target_index += 1;
         card_list.insertBefore(node, drop_area_node.nextSibling);
     }
     e.preventDefault();
-    saveCurrentCards().then(x => console.log("Saved due to card dragged"));
+    saveCardMove(card_i_id, card_list_i_id, target_index).then(x => console.log("Saved due to card dragged"));
 }
 
 function shouldInsertAbove(dropY, drop_area) {
@@ -117,9 +130,11 @@ function loseFocus(e) {
         if (e.target.innerText.trim() == "") {
             e.target.innerText = "title..."
         }
+        // TODO: Just save the title.
+        saveCurrentCards().then(x => console.log("Saving because lost focus (Old style)"));
+        return;
     }
 
-    saveCurrentCards().then(x => console.log("Saving because lost focus (Old style)"));
 }
 
 function onEnterKey(ev) {
@@ -223,28 +238,19 @@ function addCardButtonClick(ev) {
 
     let card_list_container = ev.target.parentNode.parentNode;
 
-    console.log("Container: ", card_list_container);
-    console.log("Searching for: ", ev.target.parentNode);
-    for (var i = 0; i < card_list_container.children.length; i++) {
-        if (ev.target.parentNode.isSameNode(card_list_container.children.item(i))) {
-            card_list_index = i;
-            console.log("Found card list index: ", card_list_index);
-            break;
-        }
-    }
-    console.log("Card list index: ", card_list_index);
+    const card_list_id = card_list.getAttribute("i_id");
+    console.log("to card_list_id: ", card_list_id);
 
     const title = "New card";
     const i_id = null;
     const desc = "";
     const tags = [];
 
-    console.log("title: ", title, " desc: ", desc, " index: ", card_list_index);
+    console.log("title: ", title, " desc: ", desc, " index: ", card_list_id);
 
     const item = makeCardListItem(title, i_id, tags);
     card_list.appendChild(item);
-    console.log("title: ", title, " desc: ", desc, " index: ", card_list_index);
-    saveAddCard(title, desc, tags, card_list_index).then(x => {
+    saveAddCard(title, desc, tags, card_list_id).then(x => {
         console.log("RESPONSE: ", x, " item: ", item);
         return x.json();
     }).then(json => {
@@ -266,6 +272,7 @@ async function loadCards() {
         const list_element = all_lists.item(i);
         const list = data.lists[i];
         console.log(`list ${i}:`, list);
+        list_element.setAttribute("i_id", list.id);
         list.items.forEach(card => {
             console.log(card);
             if (card.tags == undefined) {
@@ -277,9 +284,9 @@ async function loadCards() {
     }
 }
 
-async function saveAddCard(title, desc, tags, list_index) {
+async function saveAddCard(title, desc, tags, list_id) {
     console.log("Telling server we created a new card.");
-    const data = {title: title, desc: desc, tags: tags, list: list_index};
+    const data = {title: title, desc: desc, tags: tags, list: list_id};
     console.log("Data: ", data);
     const json = JSON.stringify(data);
     return await fetch("/api/boards/" + getBoardId() + "/cards", {
@@ -306,6 +313,17 @@ async function saveDeleteCard(card_id) {
     });
 }
 
+// Save a card move. to_list_index may be undefined for appends.
+async function saveCardMove(card_id, to_list_id, to_list_index) {
+    const data = { move_card: {id: card_id, to_list: to_list_id, list_index: to_list_index}};
+    const json = JSON.stringify(data);
+    return await fetch("/api/boards/" + getBoardId(), {
+        method: "PATCH",
+        body: json,
+        headers: {"Content-Type": "application/json; charset=UTF-8"}
+    });
+}
+
 async function saveCurrentCards() {
     console.log("Saving cards");
     let data = {
@@ -313,11 +331,12 @@ async function saveCurrentCards() {
     };
     document.querySelectorAll(".card-list").forEach(cardList => {
         console.log("cardList", cardList);
+        card_list_i_id = cardList.getAttribute("i_id");
         let list = []
         cardList.querySelectorAll(".card").forEach(card => {
             console.log("saving card", card);
-            const id = card.db_id;
-            console.log("db id: ", id);
+            const id = card.getAttribute("i_id");
+            console.log("i_id: ", id);
             const title = card.querySelector(".card-title").innerText;
             //desc = card.querySelector(".card-description").innerText;
             const desc = "";
@@ -327,7 +346,7 @@ async function saveCurrentCards() {
             })
             list.push({ id: id, title: title, desc: desc, tags: tags});
         });
-        data.lists.push({ items: list });
+        data.lists.push({ id: card_list_i_id, items: list });
     });
     console.log("saving data", data);
     saveCards(JSON.stringify(data));
