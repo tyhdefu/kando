@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use async_trait::async_trait;
 use uuid::Uuid;
-use crate::api::board::{BoardId, Card, KandoBoardState};
+use crate::api::board::{BoardId, Card, CardId, KandoBoardState};
 use crate::api::data_store::{DataStore, DataStoreError};
 
 pub struct MappedDataStore<T: BoardStoreAccessor + Send + Sync> {
@@ -34,13 +34,54 @@ impl<T: BoardStoreAccessor + Send + Sync> DataStore for MappedDataStore<T> {
         Ok(())
     }
 
-    async fn append_new_card(&mut self, board_id: BoardId, list_index: usize) -> Result<Card, DataStoreError> {
+    async fn append_new_card(&self, board_id: BoardId, list_index: usize, title: String, desc: String, tags: Vec<String>) -> Result<Card, DataStoreError> {
         let accessor = self.map.get(&board_id).ok_or(DataStoreError::BoardNotFound)?;
         let mut state = accessor.read().await?;
-        let id = Uuid::new_v4();
-        let card = Card::new(id, "New card".into(), "desc".into(), vec![]);
+        let id = CardId::new(Uuid::new_v4());
+        let card = Card::new(id, title, desc, tags);
         state.get_card_list_mut(list_index).push_card(card.clone());
+        accessor.write(state).await?;
         return Ok(card);
+    }
+
+    async fn modify_card(&self, board_id: BoardId, card_id: CardId, new_title: Option<String>, new_desc: Option<String>) -> Result<Card, DataStoreError> {
+        let accessor = self.map.get(&board_id).ok_or(DataStoreError::BoardNotFound)?;
+        let mut state = accessor.read().await?;
+        let modified_card = match state.get_card_mut(&card_id) {
+            None => return Err(DataStoreError::CardNotFound),
+            Some(card) => {
+                if let Some(title) = new_title {
+                    card.set_title(title);
+                }
+                if let Some(desc) = new_desc {
+                    card.set_desc(desc);
+                }
+                card.clone()
+            }
+        };
+        accessor.write(state).await?;
+        Ok(modified_card)
+    }
+
+    async fn delete_card(&self, board_id: BoardId, card_id: CardId) -> Result<Card, DataStoreError> {
+        let accessor = self.map.get(&board_id).ok_or(DataStoreError::BoardNotFound)?;
+        let mut state = accessor.read().await?;
+        let card = state.remove_card(&card_id).ok_or(DataStoreError::CardNotFound)?;
+        accessor.write(state).await?;
+        Ok(card)
+    }
+
+    async fn move_card(&self, board_id: BoardId, card_id: CardId, list: usize, list_index: Option<usize>) -> Result<(), DataStoreError> {
+        let accessor = self.map.get(&board_id).ok_or(DataStoreError::BoardNotFound)?;
+        let mut state = accessor.read().await?;
+        let result = state.move_card(&card_id, list, list_index);
+        match result {
+            None => Err(DataStoreError::InternalError(format!("No such card with id {:?}, no such list, or invalid list index", card_id))),
+            Some(_) => {
+                accessor.write(state).await?;
+                Ok(())
+            },
+        }
     }
 }
 

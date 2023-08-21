@@ -1,8 +1,8 @@
 //// DROPPING BEHAVIOUR ////
 
 function getBoardId() {
-    split = window.location.href.split("boards/");
-    boardId = split[1];
+    const split = window.location.href.split("boards/");
+    const boardId = split[1];
     console.log("current board '" + boardId + "'");
     return boardId;
 }
@@ -31,7 +31,7 @@ function drop(ev) {
         console.log("dropped object is not a card");
         return;
     }
-    container = card.closest(".card-drop-area");
+    const container = card.closest(".card-drop-area");
 
     dropOnto(ev, ev.target, container);
 }
@@ -48,16 +48,16 @@ function dropOnto(e, target, node) {
         saveCurrentCards().then(x => console.log("Saved due to card dragged"));
         return;
     }
-    drop_area_node = target.closest(".card-drop-area");
+    const drop_area_node = target.closest(".card-drop-area");
 
     if (drop_area_node == null) {
         console.warn("Didn't drop onto a place you should drop");
         return;
     }
 
-    card_list = drop_area_node.parentNode;
+    const card_list = drop_area_node.parentNode;
 
-    insertAbove = shouldInsertAbove(e.pageY, drop_area_node);
+    const insertAbove = shouldInsertAbove(e.pageY, drop_area_node);
 
     if (insertAbove) {
         console.log("Inserting before");
@@ -72,10 +72,10 @@ function dropOnto(e, target, node) {
 }
 
 function shouldInsertAbove(dropY, drop_area) {
-    card_list = drop_area.closest(".card-list");
+    const card_list = drop_area.closest(".card-list");
 
-    relY = card_list.scrollTop - drop_area.offsetTop + dropY;
-    areaMidHeight = drop_area.offsetHeight / 2;
+    const relY = card_list.scrollTop - drop_area.offsetTop + dropY;
+    const areaMidHeight = drop_area.offsetHeight / 2;
     console.log(`dropY: ${dropY} relY: ${relY} areaMidHeight: ${areaMidHeight}`);
 
     return relY < areaMidHeight;
@@ -103,9 +103,14 @@ function loseFocus(e) {
     console.log("lost focus");
     if (e.target.classList.contains("card-title")) {
         makeCardTitleEditable(false, e.target);
+        let i_id = e.target.parentNode.getAttribute("i_id");
         if (e.target.innerText.trim() == "") {
             e.target.closest(".card-drop-area").remove();
+            saveDeleteCard(i_id).then(x => console.log("Deleted card because lost focus and title was empty"));
+            return;
         }
+        saveModifyCard(i_id, e.target.innerText, undefined).then(x => console.log("Saving because lost focus"));
+        return;
     }
     else if (e.target.classList.contains("card-header-title")) {
         makeEditable(false, e.target);
@@ -113,7 +118,8 @@ function loseFocus(e) {
             e.target.innerText = "title..."
         }
     }
-    saveCurrentCards().then(x => console.log("Saving because lost focus"));
+
+    saveCurrentCards().then(x => console.log("Saving because lost focus (Old style)"));
 }
 
 function onEnterKey(ev) {
@@ -133,13 +139,14 @@ function onEnterKey(ev) {
     console.log("Removing focus and selection");
     ev.target.blur();
     document.getSelection().removeAllRanges();
-    saveCurrentCards().then(x => console.log("Saving because hit enter"));
+    //let i_id = ev.target.parentNode.getAttribute("i_id");
+    //saveModifyCard(i_id, ev.target.innerText, null).then(x => console.log(`Saving {i_id} because hit enter`));
 }
 
 function makeCardTitleEditable(editable, ct) {
     console.log("makeCardTitleEditable");
     console.log(ct);
-    card = ct.closest(".card");
+    let card = ct.closest(".card");
     card.draggable = !editable;
     
     makeEditable(editable, ct);
@@ -151,9 +158,9 @@ function makeEditable(editable, ct) {
         console.log(ct);
         ct.focus();
 
-        selection = document.getSelection();
+        let selection = document.getSelection();
         
-        range = document.createRange();
+        let range = document.createRange();
         range.setStart(ct, 0);
         range.setEnd(ct, 1);
 
@@ -176,22 +183,22 @@ function makeEditable(editable, ct) {
 //   </div>
 // </div>
 
-function makeCardListItem(title_str,/* desc_str,*/ db_id_str, tag_list) {
-    drop_area = document.createElement("div");
+function makeCardListItem(title_str,/* desc_str,*/ i_id_str, tag_list) {
+    let drop_area = document.createElement("div");
     drop_area.classList.add("card-drop-area");
-    card = document.createElement("div");
+    let card = document.createElement("div");
     card.classList.add("card");
-    title = document.createElement("h3");
+    let title = document.createElement("h3");
     title.classList.add("card-title");
     title.innerText = title_str;
     //desc = document.createElement("p");
     //desc.classList.add("card-description");
     //desc.innerText = desc_str;
-    tags = document.createElement("div");
+    let tags = document.createElement("div");
     tags.classList.add("card-tags");
 
     tag_list.forEach(tag_str => {
-        tag = document.createElement("p");
+        let tag = document.createElement("p");
         tag.innerText = tag_str;
         tag.classList.add("card-tag");
         tags.appendChild(tag);
@@ -202,7 +209,7 @@ function makeCardListItem(title_str,/* desc_str,*/ db_id_str, tag_list) {
     //card.appendChild(desc);
     card.appendChild(tags);
 
-    card.db_id = db_id_str;
+    card.setAttribute("i_id", i_id_str);
 
     cardEnable(card);
     cardTitleEditEnable(title);
@@ -212,10 +219,38 @@ function makeCardListItem(title_str,/* desc_str,*/ db_id_str, tag_list) {
 
 function addCardButtonClick(ev) {
     console.log("adding new card");
-    card_list = ev.target.parentNode.querySelector(".card-list");
-    item = makeCardListItem("New card", null, /*"unknown id", */["Tag 1", "Tag 2"]);
+    const card_list = ev.target.parentNode.querySelector(".card-list");
+
+    let card_list_container = ev.target.parentNode.parentNode;
+
+    console.log("Container: ", card_list_container);
+    console.log("Searching for: ", ev.target.parentNode);
+    for (var i = 0; i < card_list_container.children.length; i++) {
+        if (ev.target.parentNode.isSameNode(card_list_container.children.item(i))) {
+            card_list_index = i;
+            console.log("Found card list index: ", card_list_index);
+            break;
+        }
+    }
+    console.log("Card list index: ", card_list_index);
+
+    const title = "New card";
+    const i_id = null;
+    const desc = "";
+    const tags = [];
+
+    console.log("title: ", title, " desc: ", desc, " index: ", card_list_index);
+
+    const item = makeCardListItem(title, i_id, tags);
     card_list.appendChild(item);
-    saveCurrentCards().then(x => console.log("cards saved"));
+    console.log("title: ", title, " desc: ", desc, " index: ", card_list_index);
+    saveAddCard(title, desc, tags, card_list_index).then(x => {
+        console.log("RESPONSE: ", x, " item: ", item);
+        return x.json();
+    }).then(json => {
+        console.log("json: ", json);
+        item.querySelector(".card").setAttribute("i_id", json.id);
+    })
 }
 
 async function loadCards() {
@@ -223,41 +258,70 @@ async function loadCards() {
     const response = await fetch("/api/boards/" + getBoardId());
     const data = await response.json();
     console.log("data", data);
-    all_lists = document.querySelectorAll(".card-list");
+    const all_lists = document.querySelectorAll(".card-list");
     console.log("all_lists", all_lists);
     console.log("data.lists.length", data.lists.length);
     for (var i = 0; i < data.lists.length; i++) {
         console.log("i", i);
-        list_element = all_lists.item(i);
-        list = data.lists[i];
+        const list_element = all_lists.item(i);
+        const list = data.lists[i];
         console.log(`list ${i}:`, list);
         list.items.forEach(card => {
             console.log(card);
             if (card.tags == undefined) {
                 card.tags = [];
             }
-            card_element = makeCardListItem(card.title/*, card.desc*/, card.id, card.tags);
+            const card_element = makeCardListItem(card.title/*, card.desc*/, card.id, card.tags);
             list_element.appendChild(card_element);
         });
     }
 }
 
+async function saveAddCard(title, desc, tags, list_index) {
+    console.log("Telling server we created a new card.");
+    const data = {title: title, desc: desc, tags: tags, list: list_index};
+    console.log("Data: ", data);
+    const json = JSON.stringify(data);
+    return await fetch("/api/boards/" + getBoardId() + "/cards", {
+        method: "POST",
+        body: json,
+        headers: {"Content-Type": "application/json; charset=UTF-8"}
+    });
+}
+
+async function saveModifyCard(card_id, new_title, new_desc) {
+    const data = {title: new_title, desc: new_desc}
+    console.log("Modify card data: ", data);
+    const json = JSON.stringify(data);
+    return await fetch("/api/boards/" + getBoardId() + "/cards/" + card_id, {
+        method: "PATCH",
+        body: json,
+        headers: {"Content-Type": "application/json; charset=UTF-8"}
+    });
+}
+
+async function saveDeleteCard(card_id) {
+    return await fetch("/api/boards/" + getBoardId() + "/cards/" + card_id, {
+        method: "DELETE"
+    });
+}
+
 async function saveCurrentCards() {
     console.log("Saving cards");
-    data = {
+    let data = {
         lists: []
     };
     document.querySelectorAll(".card-list").forEach(cardList => {
         console.log("cardList", cardList);
-        list = []
+        let list = []
         cardList.querySelectorAll(".card").forEach(card => {
             console.log("saving card", card);
-            id = card.db_id;
+            const id = card.db_id;
             console.log("db id: ", id);
-            title = card.querySelector(".card-title").innerText;
+            const title = card.querySelector(".card-title").innerText;
             //desc = card.querySelector(".card-description").innerText;
-            desc = "";
-            tags = []
+            const desc = "";
+            const tags = []
             card.querySelectorAll(".card-tag").forEach(tag => {
                 tags.push(tag.innerText);
             })
@@ -287,8 +351,8 @@ document.querySelectorAll(".card-add-button").forEach(b => {
 
 function onBoardPick(ev) {
     console.log("board picked ", ev);
-    el = ev.target;
-    value = el.options[el.selectedIndex].value;
+    let el = ev.target;
+    const value = el.options[el.selectedIndex].value;
     console.log("switching to board '", value, "'");
     window.location.href = "/boards/" + value;
 }
@@ -333,8 +397,8 @@ document.querySelectorAll(".card-header-title").forEach(ct => {
 
 document.querySelectorAll("#pick-board").forEach(b => {
     b.addEventListener("change", onBoardPick);
-    boardId = getBoardId();
-    curOption = null;
+    const boardId = getBoardId();
+    let curOption = null;
     for (var i = 0; i < b.options.length; i++) {
         console.log(b.options[i]);
         if (b.options[i].value == boardId) {
