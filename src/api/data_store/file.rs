@@ -85,6 +85,15 @@ impl<T: BoardStoreAccessor + Send + Sync> DataStore for MappedDataStore<T> {
             },
         }
     }
+
+    async fn rename_card_list(&self, board_id: BoardId, card_list: CardListId, to: String) -> Result<(), DataStoreError> {
+        let accessor = self.map.get(&board_id).ok_or(DataStoreError::BoardNotFound)?;
+        let mut state = accessor.read().await?;
+        state.get_card_list_mut(&card_list)
+            .ok_or(DataStoreError::CardListNotFound)?
+            .set_title(to);
+        Ok(())
+    }
 }
 
 #[async_trait]

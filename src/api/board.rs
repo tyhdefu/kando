@@ -103,12 +103,13 @@ impl KandoBoardState {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct CardList {
     id: CardListId,
+    title: String,
     items: Vec<Card>,
 }
 
 impl CardList {
-    pub fn new(id: CardListId) -> Self {
-        Self { id, items: vec![] }
+    pub fn new(id: CardListId, title: String) -> Self {
+        Self { id, title, items: vec![] }
     }
 
     pub fn push_card(&mut self, card: Card) {
@@ -118,6 +119,10 @@ impl CardList {
     pub fn get_card_mut(&mut self, id: CardId) -> Option<&mut Card> {
         self.items.iter_mut()
             .find(|c| c.id == id)
+    }
+
+    pub fn set_title(&mut self, title: String) {
+        self.title = title;
     }
 }
 

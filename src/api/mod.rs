@@ -70,8 +70,12 @@ enum PatchBoardState {
         to_list: CardListId,
         list_index: Option<usize>,
     },
+    #[serde(rename = "rename_card_list")]
+    RenameCardList {
+        id: CardListId,
+        to: String,
+    }
     // TODO: Create new lists.
-    //       Rename lists.
 }
 
 #[patch("/boards/{board}")]
@@ -86,6 +90,13 @@ async fn patch_board_state(path: web::Path<BoardId>,
             list_index
         } => {
             store.move_card(board_id, id, to_list, list_index).await?;
+            HttpResponse::Ok().finish()
+        }
+        PatchBoardState::RenameCardList {
+            id,
+            to
+        } => {
+            store.rename_card_list(board_id, id, to).await?;
             HttpResponse::Ok().finish()
         }
     })

@@ -2,6 +2,7 @@
   "lists": [
     {
       "id": "6f4e9eb7-6af1-4df3-b8f0-67db4287f349",
+      "title": "Hello 1",
       "items": [
         {
           "id": "fd747259-d99e-4d66-8cc2-f7aa7452446b",
@@ -19,6 +20,7 @@
     },
     {
       "id": "cbbe1db9-6629-4aae-a1c6-49bc6046a17f",
+      "title": "Hello 2",
       "items": [
         {
           "id": "70aebbcf-0365-43c8-8c3d-f764cc799ccf",

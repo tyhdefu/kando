@@ -28,6 +28,9 @@ pub trait DataStore {
     /// If the list_index is supplied, this defines the position within the list to move the card to.
     /// Otherwise the card is appended to the list.
     async fn move_card(&self, board_id: BoardId, card_id: CardId, list: CardListId, list_index: Option<usize>) -> Result<(), DataStoreError>;
+
+    /// Change the title of the given card list.
+    async fn rename_card_list(&self, board_id: BoardId, card_list: CardListId, to: String) -> Result<(), DataStoreError>;
 }
 
 #[derive(Debug)]

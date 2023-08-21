@@ -130,8 +130,9 @@ function loseFocus(e) {
         if (e.target.innerText.trim() == "") {
             e.target.innerText = "title..."
         }
-        // TODO: Just save the title.
-        saveCurrentCards().then(x => console.log("Saving because lost focus (Old style)"));
+        console.log("e.target: ", e.target);
+        let i_id = e.target.parentNode.querySelector(".card-list").getAttribute("i_id");
+        saveCardListTitle(i_id, e.target.innerText).then(x => console.log("Saving title of card list."));
         return;
     }
 
@@ -232,6 +233,36 @@ function makeCardListItem(title_str,/* desc_str,*/ i_id_str, tag_list) {
     return drop_area;
 }
 
+function makeCardList(id, title) {
+    let card_list_container = document.createElement("div");
+    card_list_container.classList.add("card-container");
+
+    let list_header = document.createElement("div");
+    list_header.classList.add("card-list-header");
+
+    let list_header_title = document.createElement("h1");
+    list_header_title.innerText = title;
+    list_header_title.classList.add("card-header-title");
+
+    list_header.appendChild(list_header_title);
+
+    let list = document.createElement("div");
+    list.classList.add("card-list");
+    list.setAttribute("i_id", id);
+
+    let add_card_button = document.createElement("button");
+    add_card_button.classList.add("card-add-button");
+
+    card_list_container.appendChild(list_header);
+    card_list_container.appendChild(list);
+    card_list_container.appendChild(add_card_button);
+    
+    cardListHeaderTitleEnable(list_header_title);
+    enableCardList(list);
+
+    return card_list_container;
+}
+
 function addCardButtonClick(ev) {
     console.log("adding new card");
     const card_list = ev.target.parentNode.querySelector(".card-list");
@@ -259,28 +290,30 @@ function addCardButtonClick(ev) {
     })
 }
 
-async function loadCards() {
-    console.log("loading cards");
+async function loadBoard() {
+    console.log("loading board");
     const response = await fetch("/api/boards/" + getBoardId());
     const data = await response.json();
     console.log("data", data);
-    const all_lists = document.querySelectorAll(".card-list");
-    console.log("all_lists", all_lists);
+    const list_container = document.querySelector(".board");
+    console.log("list_container: ", list_container);
     console.log("data.lists.length", data.lists.length);
     for (var i = 0; i < data.lists.length; i++) {
         console.log("i", i);
-        const list_element = all_lists.item(i);
         const list = data.lists[i];
+        const list_element = makeCardList(list.id, list.title);
+        const list_element_entries = list_element.querySelector(".card-list");
+        console.log("list_element: ", list_element);
         console.log(`list ${i}:`, list);
-        list_element.setAttribute("i_id", list.id);
         list.items.forEach(card => {
             console.log(card);
             if (card.tags == undefined) {
                 card.tags = [];
             }
             const card_element = makeCardListItem(card.title/*, card.desc*/, card.id, card.tags);
-            list_element.appendChild(card_element);
+            list_element_entries.appendChild(card_element);
         });
+        list_container.appendChild(list_element);
     }
 }
 
@@ -324,6 +357,16 @@ async function saveCardMove(card_id, to_list_id, to_list_index) {
     });
 }
 
+async function saveCardListTitle(card_list_id, new_title) {
+    const data = { rename_card_list: {id: card_list_id, to: new_title} };
+    const json = JSON.stringify(data);
+    return await fetch("/api/boards/" + getBoardId(), {
+        method: "PATCH",
+        body: json,
+        headers: {"Content-Type": "application/json; charset=UTF-8"}
+    });
+}
+
 async function saveCurrentCards() {
     console.log("Saving cards");
     let data = {
@@ -346,7 +389,8 @@ async function saveCurrentCards() {
             })
             list.push({ id: id, title: title, desc: desc, tags: tags});
         });
-        data.lists.push({ id: card_list_i_id, items: list });
+        let name = cardList.querySelector(".card-header-title").innerText;
+        data.lists.push({ id: card_list_i_id, name: name, items: list });
     });
     console.log("saving data", data);
     saveCards(JSON.stringify(data));
@@ -380,9 +424,13 @@ function onBoardPick(ev) {
 
 console.log("hello");
 
-document.querySelectorAll(".card-list").forEach(cl => {
+function enableCardList(cl) {
     cl.addEventListener("drop", drop);
     cl.addEventListener("dragover", allowDrop);
+}
+
+document.querySelectorAll(".card-list").forEach(cl => {
+    enableCardList(cl);
 })
 
 i = 0;
@@ -408,10 +456,14 @@ document.querySelectorAll(".card .card-title").forEach(ct => {
     cardTitleEditEnable(ct);
 });
 
-document.querySelectorAll(".card-header-title").forEach(ct => {
+function cardListHeaderTitleEnable(ct) {
     ct.addEventListener("dblclick", doubleClickEditable);
     ct.addEventListener("blur", loseFocus);
     ct.addEventListener("keydown", onEnterKey);
+}
+
+document.querySelectorAll(".card-header-title").forEach(ct => {
+    cardListHeaderTitleEnable(ct);
 });
 
 document.querySelectorAll("#pick-board").forEach(b => {
@@ -429,4 +481,4 @@ document.querySelectorAll("#pick-board").forEach(b => {
     console.warn("Board option not found: " + boardId);
 })
 
-loadCards()
+loadBoard()
